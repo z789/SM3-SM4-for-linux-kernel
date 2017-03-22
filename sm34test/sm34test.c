@@ -27,13 +27,19 @@ static int print_hex(const char *h, char *buf, int len)
 		return -EINVAL;
 
 	printk(KERN_INFO "%s:", h);
-	for (i = 0, j = 0; i < len; i++, j++) {
+
+	i = 0;
+	j = 0;
+	while (i < len) {
 		sprintf(buf_hex+j*2, "%02X", (unsigned char)buf[i]);
-		if ((j*2+1) % BUF_LEN == 0) {
+		if (unlikely((j*2+1) % BUF_LEN == 0)) {
 			buf_hex[j*2] = '\0';
 			printk(KERN_INFO "%s", buf_hex);
 			j = 0;
+		} else{
+			j++;
 		}
+		i++;
 	}
 	buf_hex[j*2] = '\0';
 	printk(KERN_INFO "%s", buf_hex);

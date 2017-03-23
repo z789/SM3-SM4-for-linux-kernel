@@ -166,6 +166,26 @@ end:
 	return ret;
 }
 
+static int equal_plain_decrypt(const char *plain, int plen, const char *decrypt, int dlen)
+{
+	if ((plen != dlen) || memcmp(plain, decrypt, plen) != 0)
+		return 0;
+	return 1;
+}
+
+static int test_result(const char *name, const char *plain, int plen,
+				 const char *decrypt, int dlen)
+{
+	int ret = 0;
+
+	ret = equal_plain_decrypt(plain, plen, decrypt, dlen);
+	if (ret)
+		printk(KERN_INFO "%s test OK!\n", name);
+	else
+		printk(KERN_INFO "%s test ERR!\n", name);
+
+	return ret;
+}
 
 static int test_sm4_one(const char *name, char *buf, int len, char *key, int klen)
 {
@@ -199,6 +219,8 @@ static int test_sm4_one(const char *name, char *buf, int len, char *key, int kle
 
 	crypto_cipher_decrypt_one(tfm, result, result);
 	print_decrypt(name, result, result_len);
+
+	test_result(name, buf, len, result, result_len);
 
 	ret = 0;
 
@@ -311,6 +333,8 @@ static int test_sm4_blkcipher(const char *name, char *in, int inlen, char *key, 
 	ret = sm4_blkcipher_enc_dec(name, cout, clen, pout, plen, key, klen, 0);
 	print_decrypt(name, pout, plen);
 
+	test_result(name, in, inlen, pout, plen);
+
 end:
 	kfree(cout);
 	kfree(pout);
@@ -407,7 +431,8 @@ static int test_sm4_skcipher(const char *name, char *in, int inlen, char *key, i
 	if (ret)
 		printk("sm4_skcipher_dec err!\n");
 	print_decrypt(name, pout, plen);
-	printk(KERN_INFO "\n");
+
+	test_result(name, in, inlen, pout, plen);
 
 end:
 	kfree(cout);
@@ -453,8 +478,6 @@ static int __init sm34_init(void)
 				xtskey, sizeof(xtskey));
 	test_sm4_skcipher("xts(sm4)", cbcplain, sizeof(cbcplain),
 				xtskey, sizeof(xtskey));
-	//test_sm4_blkcipher("cbc(sm4)", cbcplain, sizeof(cbcplain),
-	//			key, sizeof(key));
 
 	/* -1, no need rmmod cmd when next insmod the ko */
 	return -1;

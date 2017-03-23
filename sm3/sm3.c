@@ -7,7 +7,7 @@
 #include <asm/byteorder.h>
 #include "sm3.h"
 
-static void sm3_compress(uint32_t digest[8], const unsigned char block[64]);
+static void sm3_compress(u32 digest[8], const unsigned char block[64]);
 
 static int sm3_init(struct shash_desc *desc)
 {
@@ -48,6 +48,7 @@ static int sm3_update(struct shash_desc *desc, const unsigned char *data,
 			data_len -= left;
 		}
 	}
+
 	while (data_len >= SM3_BLOCK_SIZE) {
 		sm3_compress(ctx->digest, data);
 		ctx->nblocks++;
@@ -65,8 +66,8 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 {
 	struct sm3_ctx *ctx = shash_desc_ctx(desc);
 	int i;
-	uint32_t *pdigest = (uint32_t *)digest;
-	uint32_t *count = (uint32_t *)(ctx->block + SM3_BLOCK_SIZE - 8);
+	u32 *pdigest = (u32 *)digest;
+	u32 *count = (u32 *)(ctx->block + SM3_BLOCK_SIZE - 8);
 
 	ctx->block[ctx->num] = 0x80;
 
@@ -100,21 +101,21 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 #define GG1(x, y, z) (((x) & (y)) | ((~(x)) & (z)))
 
 
-static void sm3_compress(uint32_t digest[8], const unsigned char block[64])
+static void sm3_compress(u32 digest[8], const unsigned char block[64])
 {
 	int j;
-	uint32_t W[68], W1[64];
-	const uint32_t *pblock = (const uint32_t *)block;
+	u32 W[68], W1[64];
+	const u32 *pblock = (const u32 *)block;
 
-	uint32_t A = digest[0];
-	uint32_t B = digest[1];
-	uint32_t C = digest[2];
-	uint32_t D = digest[3];
-	uint32_t E = digest[4];
-	uint32_t F = digest[5];
-	uint32_t G = digest[6];
-	uint32_t H = digest[7];
-	uint32_t SS1, SS2, TT1, TT2, T[64];
+	u32 A = digest[0];
+	u32 B = digest[1];
+	u32 C = digest[2];
+	u32 D = digest[3];
+	u32 E = digest[4];
+	u32 F = digest[5];
+	u32 G = digest[6];
+	u32 H = digest[7];
+	u32 SS1, SS2, TT1, TT2, T[64];
 
 	for (j = 0; j < 16; j++)
 		W[j] = cpu_to_be32(pblock[j]);

@@ -6,8 +6,8 @@
 #include<linux/scatterlist.h>
 //#include<crypto/sm3.h>
 //#include<crypto/sm4.h>
-#include"sm3.h"
-#include"sm4.h"
+#include"../sm3/sm3.h"
+#include"../sm4/sm4.h"
 #include<crypto/hash.h>
 #include<crypto/skcipher.h>
 

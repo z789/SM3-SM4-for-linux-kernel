@@ -67,17 +67,17 @@ static const u32 CK[32] = {
 	ROT32((x), 24))
 
 #define GET32(pc)  (					\
-	((u32)(pc)[0] << 24) ^			\
-	((u32)(pc)[1] << 16) ^			\
-	((u32)(pc)[2] <<  8) ^			\
+	((u32)(pc)[0] << 24) ^				\
+	((u32)(pc)[1] << 16) ^				\
+	((u32)(pc)[2] <<  8) ^				\
 	((u32)(pc)[3]))
 
 #define PUT32(st, ct)					\
 	do {                                            \
-		(ct)[0] = (u8)((st) >> 24);	\
-		(ct)[1] = (u8)((st) >> 16);	\
-		(ct)[2] = (u8)((st) >>  8);	\
-		(ct)[3] = (u8)(st);                \
+		(ct)[0] = (u8)((st) >> 24);		\
+		(ct)[1] = (u8)((st) >> 16);		\
+		(ct)[2] = (u8)((st) >>  8);		\
+		(ct)[3] = (u8)(st);			\
 	} while (0)
 
 #define S32(A)						\
@@ -86,9 +86,9 @@ static const u32 CK[32] = {
 	 (SBOX[((A) >>  8) & 0xff] <<  8) ^		\
 	 (SBOX[((A))       & 0xff]))
 
-#define L32_(x)					\
-	((x) ^					\
-	ROT32((x), 13) ^			\
+#define L32_(x)						\
+	((x) ^						\
+	ROT32((x), 13) ^				\
 	ROT32((x), 23))
 
 #define ROUND(x0, x1, x2, x3, x4, i)			\

@@ -9,7 +9,7 @@
 #include <linux/types.h>
 
 struct sm4_key {
-	uint32_t rk[SM4_NUM_ROUNDS];
+	u32 rk[SM4_NUM_ROUNDS];
 };
 
 struct sm4_ctx {

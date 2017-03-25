@@ -3,7 +3,6 @@
 
 #define SM4_KEY_SIZE		16
 #define SM4_BLOCK_SIZE		16
-#define SM4_IV_LENGTH		(SM4_BLOCK_SIZE)
 #define SM4_NUM_ROUNDS		32
 
 #include <linux/types.h>

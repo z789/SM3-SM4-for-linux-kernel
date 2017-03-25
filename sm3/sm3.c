@@ -101,10 +101,13 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 #define GG1(x, y, z) (((x) & (y)) | ((~(x)) & (z)))
 
 
+static const u32 T16 = 0x79CC4519;
+static const u32 T64 = 0x7A879D8A;
+
 static void sm3_compress(u32 digest[8], const unsigned char block[64])
 {
 	int j;
-	u32 W[68], W1[64];
+	u32 W[68];
 	const u32 *pblock = (const u32 *)block;
 
 	u32 A = digest[0];
@@ -115,21 +118,18 @@ static void sm3_compress(u32 digest[8], const unsigned char block[64])
 	u32 F = digest[5];
 	u32 G = digest[6];
 	u32 H = digest[7];
-	u32 SS1, SS2, TT1, TT2, T[64];
+	u32 SS1, SS2, TT1, TT2;
 
 	for (j = 0; j < 16; j++)
 		W[j] = cpu_to_be32(pblock[j]);
 	for (j = 16; j < 68; j++)
 		W[j] = P1(W[j-16] ^ W[j-9] ^ ROTATELEFT(W[j-3], 15)) ^ ROTATELEFT(W[j - 13], 7) ^ W[j-6];
-	for (j = 0; j < 64; j++)
-		W1[j] = W[j] ^ W[j+4];
 
 	for (j = 0; j < 16; j++) {
 
-		T[j] = 0x79CC4519;
-		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E + ROTATELEFT(T[j], j)), 7);
+		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E + ROTATELEFT(T16, j)), 7);
 		SS2 = SS1 ^ ROTATELEFT(A, 12);
-		TT1 = FF0(A, B, C) + D + SS2 + W1[j];
+		TT1 = FF0(A, B, C) + D + SS2 + (W[j] ^ W[j+4]);
 		TT2 = GG0(E, F, G) + H + SS1 + W[j];
 		D = C;
 		C = ROTATELEFT(B, 9);
@@ -143,10 +143,9 @@ static void sm3_compress(u32 digest[8], const unsigned char block[64])
 
 	for (j = 16; j < 64; j++) {
 
-		T[j] = 0x7A879D8A;
-		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E + ROTATELEFT(T[j], j)), 7);
+		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E + ROTATELEFT(T64, j)), 7);
 		SS2 = SS1 ^ ROTATELEFT(A, 12);
-		TT1 = FF1(A, B, C) + D + SS2 + W1[j];
+		TT1 = FF1(A, B, C) + D + SS2 + (W[j] ^ W[j+4]);
 		TT2 = GG1(E, F, G) + H + SS1 + W[j];
 		D = C;
 		C = ROTATELEFT(B, 9);

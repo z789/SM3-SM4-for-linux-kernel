@@ -161,8 +161,6 @@ static void sm4_set_encrypt_key(struct sm4_key *key, const u8 *in_key)
 	x3 = GET32(in_key + 12) ^ FK[3];
 
 	ROUNDS(ENC_KEY_ROUND, x0, x1, x2, x3, x4);
-
-	x0 = x1 = x2 = x3 = x4 = 0;
 }
 
 static void sm4_set_decrypt_key(struct sm4_key *key, const u8 *in_key)
@@ -176,8 +174,6 @@ static void sm4_set_decrypt_key(struct sm4_key *key, const u8 *in_key)
 	x3 = GET32(in_key + 12) ^ FK[3];
 
 	ROUNDS(DEC_KEY_ROUND, x0, x1, x2, x3, x4);
-
-	x0 = x1 = x2 = x3 = x4 = 0;
 }
 
 static int sm4_set_key(struct crypto_tfm *tfm, const u8 *in_key,
@@ -212,8 +208,6 @@ static void sm4_process(u8 *out, const u8 *in, const struct sm4_key *key)
 	PUT32(x4, out +  4);
 	PUT32(x3, out +  8);
 	PUT32(x2, out + 12);
-
-	x0 = x1 = x2 = x3 = x4 = 0;
 }
 
 static void sm4_encrypt(struct crypto_tfm *tfm, u8 *dst, const u8 *src)
@@ -222,8 +216,8 @@ static void sm4_encrypt(struct crypto_tfm *tfm, u8 *dst, const u8 *src)
 	struct sm4_key *key = &ctx->ekey;
 
 	sm4_process(dst, src, key);
-
 }
+
 static void sm4_decrypt(struct crypto_tfm *tfm, u8 *dst, const u8 *src)
 {
 	struct sm4_ctx *ctx = crypto_tfm_ctx(tfm);

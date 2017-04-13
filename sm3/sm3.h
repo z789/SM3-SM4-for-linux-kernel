@@ -12,7 +12,7 @@
 
 struct sm3_ctx {
 	u32 digest[8];
-	int nblocks;
+	u64 nblocks;
 	unsigned char block[64];
 	int num;
 };

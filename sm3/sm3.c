@@ -67,7 +67,7 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 	struct sm3_ctx *ctx = shash_desc_ctx(desc);
 	int i;
 	u32 *pdigest = (u32 *)digest;
-	u32 *count = (u32 *)(ctx->block + SM3_BLOCK_SIZE - 8);
+	u64 *count = (u64 *)(ctx->block + SM3_BLOCK_SIZE - 8);
 
 	ctx->block[ctx->num] = 0x80;
 
@@ -79,8 +79,7 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 		memset(ctx->block, 0, SM3_BLOCK_SIZE - 8);
 	}
 
-	count[0] = cpu_to_be32((ctx->nblocks) >> 23);
-	count[1] = cpu_to_be32((ctx->nblocks << 9) + (ctx->num << 3));
+	count[0] = cpu_to_be64((ctx->nblocks << 9) + (ctx->num << 3));
 
 	sm3_compress(ctx->digest, ctx->block);
 	for (i = 0; i < ARRAY_SIZE(ctx->digest); i++)

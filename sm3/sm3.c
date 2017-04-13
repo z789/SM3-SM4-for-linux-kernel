@@ -72,9 +72,11 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 	ctx->block[ctx->num] = 0x80;
 
 	if (ctx->num + 9 <= SM3_BLOCK_SIZE) {
-		memset(ctx->block + ctx->num + 1, 0, SM3_BLOCK_SIZE - ctx->num - 9);
+		memset(ctx->block + ctx->num + 1, 0,
+			 SM3_BLOCK_SIZE - ctx->num - 9);
 	} else {
-		memset(ctx->block + ctx->num + 1, 0, SM3_BLOCK_SIZE - ctx->num - 1);
+		memset(ctx->block + ctx->num + 1, 0,
+			 SM3_BLOCK_SIZE - ctx->num - 1);
 		sm3_compress(ctx->digest, ctx->block);
 		memset(ctx->block, 0, SM3_BLOCK_SIZE - 8);
 	}
@@ -103,6 +105,243 @@ static int sm3_final(struct shash_desc *desc, unsigned char *digest)
 static const u32 T16 = 0x79CC4519;
 static const u32 T64 = 0x7A879D8A;
 
+#ifdef SM3_MACRO
+#define ROTATELEFT64(X, n)  (((X)<<((n)-32)) | ((X)>>(64-(n))))
+
+#define W16_INIT(WP, pb)                     \
+	do {                                 \
+		WP[0] = cpu_to_be32(pb[0]);  \
+		WP[1] = cpu_to_be32(pb[1]);  \
+		WP[2] = cpu_to_be32(pb[2]);  \
+		WP[3] = cpu_to_be32(pb[3]);  \
+		WP[4] = cpu_to_be32(pb[4]);  \
+		WP[5] = cpu_to_be32(pb[5]);  \
+		WP[6] = cpu_to_be32(pb[6]);  \
+		WP[7] = cpu_to_be32(pb[7]);  \
+		WP[8] = cpu_to_be32(pb[8]);  \
+		WP[9] = cpu_to_be32(pb[9]);  \
+		WP[10] = cpu_to_be32(pb[10]);  \
+		WP[11] = cpu_to_be32(pb[11]);  \
+		WP[12] = cpu_to_be32(pb[12]);  \
+		WP[13] = cpu_to_be32(pb[13]);  \
+		WP[14] = cpu_to_be32(pb[14]);  \
+		WP[15] = cpu_to_be32(pb[15]);  \
+	} while (0)
+
+#define W68_UNIT(WP, jp)                                              \
+	(WP[jp] = P1(WP[jp-16] ^ WP[jp-9] ^ ROTATELEFT(WP[jp-3], 15)) \
+		 ^ ROTATELEFT(WP[jp - 13], 7) ^ WP[jp-6])
+
+#define W68_INIT(WP)                               \
+	do {                                       \
+		W68_UNIT(WP, 16);                  \
+		W68_UNIT(WP, 17);                  \
+		W68_UNIT(WP, 18);                  \
+		W68_UNIT(WP, 19);                  \
+		W68_UNIT(WP, 20);                  \
+		W68_UNIT(WP, 21);                  \
+		W68_UNIT(WP, 22);                  \
+		W68_UNIT(WP, 23);                  \
+		W68_UNIT(WP, 24);                  \
+		W68_UNIT(WP, 25);                  \
+		W68_UNIT(WP, 26);                  \
+		W68_UNIT(WP, 27);                  \
+		W68_UNIT(WP, 28);                  \
+		W68_UNIT(WP, 29);                  \
+		W68_UNIT(WP, 30);                  \
+		W68_UNIT(WP, 31);                  \
+		W68_UNIT(WP, 32);                  \
+		W68_UNIT(WP, 33);                  \
+		W68_UNIT(WP, 34);                  \
+		W68_UNIT(WP, 35);                  \
+		W68_UNIT(WP, 36);                  \
+		W68_UNIT(WP, 37);                  \
+		W68_UNIT(WP, 38);                  \
+		W68_UNIT(WP, 39);                  \
+		W68_UNIT(WP, 40);                  \
+		W68_UNIT(WP, 41);                  \
+		W68_UNIT(WP, 42);                  \
+		W68_UNIT(WP, 43);                  \
+		W68_UNIT(WP, 44);                  \
+		W68_UNIT(WP, 45);                  \
+		W68_UNIT(WP, 46);                  \
+		W68_UNIT(WP, 47);                  \
+		W68_UNIT(WP, 48);                  \
+		W68_UNIT(WP, 49);                  \
+		W68_UNIT(WP, 50);                  \
+		W68_UNIT(WP, 51);                  \
+		W68_UNIT(WP, 52);                  \
+		W68_UNIT(WP, 53);                  \
+		W68_UNIT(WP, 54);                  \
+		W68_UNIT(WP, 55);                  \
+		W68_UNIT(WP, 56);                  \
+		W68_UNIT(WP, 57);                  \
+		W68_UNIT(WP, 58);                  \
+		W68_UNIT(WP, 59);                  \
+		W68_UNIT(WP, 60);                  \
+		W68_UNIT(WP, 61);                  \
+		W68_UNIT(WP, 62);                  \
+		W68_UNIT(WP, 63);                  \
+		W68_UNIT(WP, 64);                  \
+		W68_UNIT(WP, 65);                  \
+		W68_UNIT(WP, 66);                  \
+		W68_UNIT(WP, 67);                  \
+	} while (0)
+
+#define FOR16_UNIT(jp)                                            \
+	do {                                                      \
+		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E           \
+				+ ROTATELEFT(T16, jp)), 7);       \
+		SS2 = SS1 ^ ROTATELEFT(A, 12);                    \
+		TT1 = FF0(A, B, C) + D + SS2 + (W[jp] ^ W[jp+4]); \
+		TT2 = GG0(E, F, G) + H + SS1 + W[jp];             \
+		D = C;                                            \
+		C = ROTATELEFT(B, 9);                             \
+		B = A;                                            \
+		A = TT1;                                          \
+		H = G;                                            \
+		G = ROTATELEFT(F, 19);                            \
+		F = E;                                            \
+		E = P0(TT2);                                      \
+	} while (0)
+
+#define FOR64_UNIT(jp)                                            \
+	do {                                                      \
+		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E           \
+				 + ROTATELEFT(T64, jp)), 7);      \
+		SS2 = SS1 ^ ROTATELEFT(A, 12);                    \
+		TT1 = FF1(A, B, C) + D + SS2 + (W[jp] ^ W[jp+4]); \
+		TT2 = GG1(E, F, G) + H + SS1 + W[jp];             \
+		D = C;                                            \
+		C = ROTATELEFT(B, 9);                             \
+		B = A;                                            \
+		A = TT1;                                          \
+		H = G;                                            \
+		G = ROTATELEFT(F, 19);                            \
+		F = E;                                            \
+		E = P0(TT2);                                      \
+	} while (0)
+
+#define FOR64_UNIT64(jp)                                          \
+	do {                                                      \
+		SS1 = ROTATELEFT((ROTATELEFT(A, 12) + E           \
+				 + ROTATELEFT64(T64, jp)), 7);    \
+		SS2 = SS1 ^ ROTATELEFT(A, 12);                    \
+		TT1 = FF1(A, B, C) + D + SS2 + (W[jp] ^ W[jp+4]); \
+		TT2 = GG1(E, F, G) + H + SS1 + W[jp];             \
+		D = C;                                            \
+		C = ROTATELEFT(B, 9);                             \
+		B = A;                                            \
+		A = TT1;                                          \
+		H = G;                                            \
+		G = ROTATELEFT(F, 19);                            \
+		F = E;                                            \
+		E = P0(TT2);                                      \
+	} while (0)
+
+#define FOR16_LOOP             \
+	do {                   \
+		FOR16_UNIT(0); \
+		FOR16_UNIT(1); \
+		FOR16_UNIT(2); \
+		FOR16_UNIT(3); \
+		FOR16_UNIT(4); \
+		FOR16_UNIT(5); \
+		FOR16_UNIT(6); \
+		FOR16_UNIT(7); \
+		FOR16_UNIT(8); \
+		FOR16_UNIT(9); \
+		FOR16_UNIT(10); \
+		FOR16_UNIT(11); \
+		FOR16_UNIT(12); \
+		FOR16_UNIT(13); \
+		FOR16_UNIT(14); \
+		FOR16_UNIT(15); \
+	} while (0)
+
+#define FOR64_LOOP              \
+	do {                    \
+		FOR64_UNIT(16); \
+		FOR64_UNIT(17); \
+		FOR64_UNIT(18); \
+		FOR64_UNIT(19); \
+		FOR64_UNIT(20); \
+		FOR64_UNIT(21); \
+		FOR64_UNIT(22); \
+		FOR64_UNIT(23); \
+		FOR64_UNIT(24); \
+		FOR64_UNIT(25); \
+		FOR64_UNIT(26); \
+		FOR64_UNIT(27); \
+		FOR64_UNIT(28); \
+		FOR64_UNIT(29); \
+		FOR64_UNIT(30); \
+		FOR64_UNIT(31); \
+		FOR64_UNIT(32); \
+		FOR64_UNIT64(33); \
+		FOR64_UNIT64(34); \
+		FOR64_UNIT64(35); \
+		FOR64_UNIT64(36); \
+		FOR64_UNIT64(37); \
+		FOR64_UNIT64(38); \
+		FOR64_UNIT64(39); \
+		FOR64_UNIT64(40); \
+		FOR64_UNIT64(41); \
+		FOR64_UNIT64(42); \
+		FOR64_UNIT64(43); \
+		FOR64_UNIT64(44); \
+		FOR64_UNIT64(45); \
+		FOR64_UNIT64(46); \
+		FOR64_UNIT64(47); \
+		FOR64_UNIT64(48); \
+		FOR64_UNIT64(49); \
+		FOR64_UNIT64(50); \
+		FOR64_UNIT64(51); \
+		FOR64_UNIT64(52); \
+		FOR64_UNIT64(53); \
+		FOR64_UNIT64(54); \
+		FOR64_UNIT64(55); \
+		FOR64_UNIT64(56); \
+		FOR64_UNIT64(57); \
+		FOR64_UNIT64(58); \
+		FOR64_UNIT64(59); \
+		FOR64_UNIT64(60); \
+		FOR64_UNIT64(61); \
+		FOR64_UNIT64(62); \
+		FOR64_UNIT64(63); \
+	} while (0)
+
+static void sm3_compress(u32 digest[8], const unsigned char block[64])
+{
+	u32 W[68];
+	const u32 *pblock = (const u32 *)block;
+
+	u32 A = digest[0];
+	u32 B = digest[1];
+	u32 C = digest[2];
+	u32 D = digest[3];
+	u32 E = digest[4];
+	u32 F = digest[5];
+	u32 G = digest[6];
+	u32 H = digest[7];
+	u32 SS1, SS2, TT1, TT2;
+
+	W16_INIT(W, pblock);
+	W68_INIT(W);
+
+	FOR16_LOOP;
+	FOR64_LOOP;
+
+	digest[0] ^= A;
+	digest[1] ^= B;
+	digest[2] ^= C;
+	digest[3] ^= D;
+	digest[4] ^= E;
+	digest[5] ^= F;
+	digest[6] ^= G;
+	digest[7] ^= H;
+}
+#else //SM3_MACRO
 static void sm3_compress(u32 digest[8], const unsigned char block[64])
 {
 	int j;
@@ -122,7 +361,8 @@ static void sm3_compress(u32 digest[8], const unsigned char block[64])
 	for (j = 0; j < 16; j++)
 		W[j] = cpu_to_be32(pblock[j]);
 	for (j = 16; j < 68; j++)
-		W[j] = P1(W[j-16] ^ W[j-9] ^ ROTATELEFT(W[j-3], 15)) ^ ROTATELEFT(W[j - 13], 7) ^ W[j-6];
+		W[j] = P1(W[j-16] ^ W[j-9] ^ ROTATELEFT(W[j-3], 15))
+			 ^ ROTATELEFT(W[j - 13], 7) ^ W[j-6];
 
 	for (j = 0; j < 16; j++) {
 
@@ -165,6 +405,7 @@ static void sm3_compress(u32 digest[8], const unsigned char block[64])
 	digest[6] ^= G;
 	digest[7] ^= H;
 }
+#endif
 
 
 static int sm3_export(struct shash_desc *desc, void *out)

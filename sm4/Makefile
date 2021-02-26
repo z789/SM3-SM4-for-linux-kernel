@@ -6,5 +6,5 @@ else
 default:
 	$(MAKE) -Wall -C $(KERNELDIR) M=$(PWD) modules
 clean:
-	rm -rf *.ko *.o *.mod.o *.mod.c *.symvers \.*.cmd .tmp_versions  modules.order
+	rm -rf *.ko *.o *.mod *.mod.o *.mod.c *.symvers \.*.cmd .tmp_versions  modules.order
 endif

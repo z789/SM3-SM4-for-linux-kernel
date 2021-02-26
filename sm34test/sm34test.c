@@ -98,7 +98,6 @@ static int test_sm3(const char *name, char *buf, int len)
 	}
 
 	desc->tfm = tfm;
-	desc->flags = 0;
 
 	ret = crypto_shash_init(desc);
 	if (ret)
@@ -153,7 +152,6 @@ static int test_hmac_sm3(const char *name, char *plaintext, int psize, char *key
 	}
 
 	shash->tfm = tfm;
-	shash->flags = 0;
 
 	print_plain(name, plaintext, psize);
 	ret = crypto_shash_digest(shash, plaintext, psize, result);

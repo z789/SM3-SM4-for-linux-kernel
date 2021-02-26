@@ -29,7 +29,7 @@ static int sm3_init(struct shash_desc *desc)
 }
 
 static int sm3_update(struct shash_desc *desc, const unsigned char *data,
-			 size_t data_len)
+			 unsigned int data_len)
 {
 	struct sm3_ctx *ctx = shash_desc_ctx(desc);
 
@@ -434,10 +434,11 @@ static struct shash_alg alg = {
 	.descsize	=	sizeof(struct sm3_ctx),
 	.statesize	=	sizeof(struct sm3_ctx),
 	.base		=	{
-		.cra_name	=	"sm3",
-		.cra_flags	=	CRYPTO_ALG_TYPE_SHASH,
-		.cra_blocksize	=	SM3_BLOCK_SIZE,
-		.cra_module	=	THIS_MODULE,
+		.cra_name		=	"sm3",
+		.cra_driver_name        =       "sm3-generic",
+		.cra_flags		=	CRYPTO_ALG_TYPE_SHASH,
+		.cra_blocksize		=	SM3_BLOCK_SIZE,
+		.cra_module		=	THIS_MODULE,
 	}
 };
 

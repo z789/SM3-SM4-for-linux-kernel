@@ -87,6 +87,7 @@ static int test_sm3(const char *name, char *buf, int len)
 	if (IS_ERR(tfm)) {
 		printk(KERN_INFO "alloc shash err:%s\n", name);
 		ret = PTR_ERR(tfm);
+		tfm = NULL;
 		goto end;
 	}
 
@@ -135,6 +136,7 @@ static int test_hmac_sm3(const char *name, char *plaintext, int psize, char *key
 	if (IS_ERR(tfm)) {
 		printk(KERN_INFO "crypto_alloc_ahash failed: err %ld", PTR_ERR(tfm));
 		ret = PTR_ERR(tfm);
+		tfm = NULL;
 		goto end;
 	}
 
@@ -160,7 +162,8 @@ static int test_hmac_sm3(const char *name, char *plaintext, int psize, char *key
 	kfree(shash);
 
 end:
-	crypto_free_shash(tfm);
+	if (tfm)
+		crypto_free_shash(tfm);
 	return ret;
 }
 
@@ -195,6 +198,7 @@ static int test_sm4_one(const char *name, char *buf, int len, char *key, int kle
 	tfm = crypto_alloc_cipher(name, 0, 0);
 	if (IS_ERR(tfm)) {
 		printk(KERN_INFO "crypto_alloc_cipher failed: err %ld", PTR_ERR(tfm));
+		tfm = NULL;
 		return PTR_ERR(tfm);
 	}
 
@@ -255,6 +259,7 @@ static int sm4_blkcipher_enc_dec(const char *name, char *in, int inlen,
 	if (IS_ERR(tfm)) {
 		printk(KERN_INFO "crypto_alloc_blkcipher failed: err %ld name:%s\n", PTR_ERR(tfm), name);
 		ret = PTR_ERR(tfm);
+		tfm = NULL;
 		goto end;
 	}
 
@@ -363,6 +368,7 @@ static int sm4_skcipher_enc_dec(const char *name, char *in, int inlen,
 	if (IS_ERR(tfm)) {
 		printk(KERN_INFO "crypto_alloc_skcipher failed: err %ld name:%s\n", PTR_ERR(tfm), name);
 		ret = PTR_ERR(tfm);
+		tfm = NULL;
 		goto end;
 	}
 

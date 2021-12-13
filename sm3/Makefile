@@ -1,6 +1,6 @@
 ifneq ($(KERNELRELEASE),)
 	obj-m := sm3.o
-#	CFLAGS_sm3.o+=-DSM3_MACRO -Wno-shift-count-overflow
+	CFLAGS_sm3.o+=-DSM3_MACRO -Wno-shift-count-overflow
 else
 	KERNELDIR ?= /lib/modules/`uname  -r`/build
 	PWD := $(shell pwd)

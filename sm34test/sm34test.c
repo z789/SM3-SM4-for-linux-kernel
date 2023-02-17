@@ -10,6 +10,12 @@
 #include"../sm4/sm4.h"
 #include<crypto/hash.h>
 #include<crypto/skcipher.h>
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 12, 1)
+#include <crypto/internal/cipher.h>
+MODULE_IMPORT_NS(CRYPTO_INTERNAL);
+#endif
 
 
 static char plain[16] = "0123456789abcdef";
@@ -234,6 +240,7 @@ end:
 	return ret;
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 1)
 static int sm4_blkcipher_enc_dec(const char *name, char *in, int inlen,
 				char *out, int outlen, char *key, int klen, int is_enc)
 {
@@ -344,6 +351,12 @@ end:
 
 	return ret;
 }
+#else
+static int test_sm4_blkcipher(const char *name, char *in, int inlen, char *key, int klen)
+{
+	return 0;
+}
+#endif
 
 static int sm4_skcipher_enc_dec(const char *name, char *in, int inlen,
 				char *out, int outlen, char *key, int klen, int is_enc)

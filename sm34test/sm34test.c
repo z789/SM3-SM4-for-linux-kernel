@@ -18,6 +18,59 @@ MODULE_IMPORT_NS(CRYPTO_INTERNAL);
 #endif
 
 
+/*
+ * http://www.gmbz.org.cn/upload/2018-07-24/1532401392982079739.pdf
+ * Annex A example
+ */
+/* "abc" */
+static unsigned char sm3_msg1[] = {0x61, 0x62, 0x63};
+static unsigned char digest_sm3_msg1[] = {
+	0x66, 0xc7, 0xf0, 0xf4, 0x62, 0xee, 0xed, 0xd9,
+	0xd1, 0xf2, 0xd4, 0x6b, 0xdc, 0x10, 0xe4, 0xe2,
+	0x41, 0x67, 0xc4, 0x87, 0x5c, 0xf2, 0xf7, 0xa2,
+	0x29, 0x7d, 0xa0, 0x2b, 0x8f, 0x4b, 0xa8, 0xe0
+};
+
+/* "abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd" */
+static unsigned char sm3_msg2[] = {
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64,
+	0x61, 0x62, 0x63, 0x64, 0x61, 0x62, 0x63, 0x64
+};
+static unsigned char digest_sm3_msg2[] = {
+	0xde, 0xbe, 0x9f, 0xf9, 0x22, 0x75, 0xb8, 0xa1,
+	0x38, 0x60, 0x48, 0x89, 0xc1, 0x8e, 0x5a, 0x4d,
+	0x6f, 0xdb, 0x70, 0xe5, 0x38, 0x7e, 0x57, 0x65,
+	0x29, 0x3d, 0xcb, 0xa3, 0x9c, 0x0c, 0x57, 0x32
+};
+
+/*
+ * The paper http://www.gmbz.org.cn/upload/2018-04-04/1522788048733065051.pdf
+ * Annex A (informative) Examples
+*/
+uint8_t sm4_plain[] = {
+	0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
+	0xFE, 0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10
+};
+uint8_t sm4_key[] = {
+	0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0xFE,
+	0xDC, 0xBA, 0x98, 0x76, 0x54, 0x32, 0x10
+};
+uint8_t sm4_cipher[] = {
+	0x68, 0x1E, 0xDF, 0x34, 0xD2, 0x06, 0x96, 0x5E,
+	0x86, 0xB3, 0xE9, 0x4F, 0x53, 0x6E, 0x42, 0x46
+};
+uint8_t sm4_cipher1000000[] = {
+	0x59, 0x52, 0x98, 0xC7, 0xC6, 0xFD, 0x27, 0x1F,
+	0x04, 0x02, 0xF8, 0x04, 0xC3, 0x3D, 0x3F, 0x66
+};
+
+
 static char plain[16] = "0123456789abcdef";
 static char key[16] = "0123456789abcdef";
 static char xtskey[32] = "0123456789abcdef";
@@ -125,6 +178,80 @@ end:
 	if (tfm)
 		crypto_free_shash(tfm);
 
+	return ret;
+}
+
+static int hash_sm3_buf(char *buf, int len, char *result, int result_len)
+{
+	struct crypto_shash *tfm = NULL;
+	struct shash_desc *desc = NULL;
+	int desc_len = 0;
+	int ret = -EINVAL;
+
+	if (!buf || len < 0 || !result || result_len < SM3_DIGEST_SIZE)
+		return ret;
+
+	tfm = crypto_alloc_shash("sm3", 0, 0);
+	if (IS_ERR(tfm)) {
+		printk(KERN_INFO "alloc shash err: sm3\n");
+		ret = PTR_ERR(tfm);
+		tfm = NULL;
+		goto end;
+	}
+
+	desc_len = crypto_shash_descsize(tfm) + sizeof(*desc);
+	desc = kmalloc(desc_len, GFP_KERNEL);
+	if (!desc) {
+		ret = -ENOMEM;
+		goto end;
+	}
+
+	desc->tfm = tfm;
+
+	ret = crypto_shash_init(desc);
+	if (ret)
+		goto end;
+
+	ret = crypto_shash_update(desc, buf, len);
+	if (ret)
+		goto end;
+
+	crypto_shash_final(desc, result);
+
+	ret = 0;
+
+end:
+	kfree(desc);
+	if (tfm)
+		crypto_free_shash(tfm);
+
+	return ret;
+}
+
+static int test_sm3_vector(void)
+{
+	char result[SM3_DIGEST_SIZE];
+	int ret = -1;
+
+	ret = hash_sm3_buf(sm3_msg1, sizeof(sm3_msg1), result, sizeof(result));
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, digest_sm3_msg1, sizeof(digest_sm3_msg1))) {
+		printk(KERN_INFO "SM3 test vector msg1 FAIL!\n");
+		goto end;
+	}
+
+	ret = hash_sm3_buf(sm3_msg2, sizeof(sm3_msg2), result, sizeof(result));
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, digest_sm3_msg2, sizeof(digest_sm3_msg2))) {
+		printk(KERN_INFO "SM3 test vector msg2 FAIL!\n");
+		goto end;
+	}
+
+	printk(KERN_INFO "SM3 test all vector OK!\n");
+	ret = 0;
+end:
 	return ret;
 }
 
@@ -458,9 +585,124 @@ end:
 	return ret;
 }
 
+static int enc_dec_sm4_one(char *buf, int len, char *result, int result_len,
+		char *key, int klen, int is_enc, int round)
+{
+	struct crypto_cipher *tfm = NULL;
+	char src_buf[SM4_BLOCK_SIZE] = {0};
+	char dst_buf[SM4_BLOCK_SIZE] = {0};
+	char *src = src_buf;
+	char *dst = dst_buf;
+	char *tmp = NULL;
+	void (*crypto_cipher_one)(struct crypto_cipher *tfm, u8 *dst, const u8 *src)
+		                      = crypto_cipher_encrypt_one;
+
+	int ret = -1;
+
+	if (!buf || len < SM4_BLOCK_SIZE || !result || result_len < SM4_BLOCK_SIZE ||
+		!key || klen < 1 || round < 1)
+		return -EINVAL;
+
+	tfm = crypto_alloc_cipher("sm4", 0, 0);
+	if (IS_ERR(tfm)) {
+		printk(KERN_INFO "crypto_alloc_cipher failed: err %ld", PTR_ERR(tfm));
+		tfm = NULL;
+		return PTR_ERR(tfm);
+	}
+
+	ret = crypto_cipher_setkey(tfm, key, klen);
+	if (ret) {
+		printk(KERN_INFO "crypto setkey err!\n");
+		goto end;
+	}
+
+	if (!is_enc)
+		crypto_cipher_one = crypto_cipher_decrypt_one;
+
+	memcpy(src_buf, buf, sizeof(src_buf));
+	while (round-- > 0) {
+		crypto_cipher_one(tfm, dst, src);
+		tmp = src;
+		src = dst;
+		dst = src;
+	}
+	memcpy(result, dst, sizeof(dst_buf));
+	ret = 0;
+
+end:
+	if (tfm)
+		crypto_free_cipher(tfm);
+
+	return ret;
+}
+
+static int enc_sm4_one(char *buf, int len, char *result, int result_len,
+		char *key, int klen, int round)
+{
+	return enc_dec_sm4_one(buf, len, result, result_len,
+			key, klen, 1, round);
+}
+
+static int dec_sm4_one(char *buf, int len, char *result, int result_len,
+		char *key, int klen, int round)
+{
+	return enc_dec_sm4_one(buf, len, result, result_len,
+			key, klen, 0, round);
+}
+
+static int test_sm4_vector(void)
+{
+	char result[SM3_BLOCK_SIZE];
+	int ret = -1;
+
+	ret = enc_sm4_one(sm4_plain, sizeof(sm4_plain), result, sizeof(result),
+			sm4_key, sizeof(sm4_key), 1);
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, sm4_cipher, sizeof(sm4_cipher))) {
+		printk(KERN_INFO "SM4 test vector 1 round encrypt FAIL!\n");
+		goto end;
+	}
+
+	ret = dec_sm4_one(sm4_cipher, sizeof(sm4_cipher), result, sizeof(result),
+			sm4_key, sizeof(sm4_key), 1);
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, sm4_plain, sizeof(sm4_plain))) {
+		printk(KERN_INFO "SM4 test vector 1 round decrypt FAIL!\n");
+		goto end;
+	}
+
+	ret = enc_sm4_one(sm4_plain, sizeof(sm4_plain), result, sizeof(result),
+			sm4_key, sizeof(sm4_key), 1000000);
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, sm4_cipher1000000, sizeof(sm4_cipher1000000))) {
+		printk(KERN_INFO "SM4 test vector 1000000 round encrypt FAIL!\n");
+		goto end;
+	}
+
+	ret = dec_sm4_one(sm4_cipher1000000, sizeof(sm4_cipher1000000),
+			result, sizeof(result), sm4_key, sizeof(sm4_key), 1000000);
+	if (ret < 0)
+		goto end;
+	if (memcmp(result, sm4_plain, sizeof(sm4_plain))) {
+		printk(KERN_INFO "SM4 test vector 1000000 round decrypt FAIL!\n");
+		goto end;
+	}
+
+	printk(KERN_INFO "SM4 test all vector OK!\n");
+	ret = 0;
+end:
+	return ret;
+}
+
 static int __init sm34_init(void)
 {
 	char cbcplain[64] = "0123456789abcdef0123456789abcdef...";
+
+	test_sm3_vector();
+	test_sm4_vector();
 
 	test_sm3("sm3", plain, sizeof(plain));
 	test_hmac_sm3("hmac(sm3)", plain, sizeof(plain), key, sizeof(key));

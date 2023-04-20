@@ -622,9 +622,11 @@ static int enc_dec_sm4_one(char *buf, int len, char *result, int result_len,
 	memcpy(src_buf, buf, sizeof(src_buf));
 	while (round-- > 0) {
 		crypto_cipher_one(tfm, dst, src);
-		tmp = src;
-		src = dst;
+		if (round <= 0)
+			break;
+		tmp = dst;
 		dst = src;
+		src = tmp;
 	}
 	memcpy(result, dst, sizeof(dst_buf));
 	ret = 0;
@@ -652,7 +654,7 @@ static int dec_sm4_one(char *buf, int len, char *result, int result_len,
 
 static int test_sm4_vector(void)
 {
-	char result[SM3_BLOCK_SIZE];
+	char result[SM4_BLOCK_SIZE] = {0};
 	int ret = -1;
 
 	ret = enc_sm4_one(sm4_plain, sizeof(sm4_plain), result, sizeof(result),
